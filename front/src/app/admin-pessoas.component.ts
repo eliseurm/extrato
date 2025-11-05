@@ -4,6 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 
 interface PessoaMagicDto {
@@ -16,20 +17,23 @@ interface PessoaMagicDto {
 @Component({
   selector: 'app-admin-pessoas',
   standalone: true,
-  imports: [CommonModule, ButtonModule, TableModule, ToastModule],
+  imports: [CommonModule, ButtonModule, TableModule, ToastModule, InputTextModule],
   providers: [MessageService],
   template: `
   <div class="container">
     <div class="topbar">
       <h2>Pessoas cadastradas</h2>
       <div class="actions">
+        <span class="filter">
+          <input pInputText type="text" placeholder="Filtrar por nome" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+        </span>
         <input type="file" (change)="onFile($event)" accept=".csv" />
         <button pButton label="Importar CSV" (click)="upload()" [disabled]="!file || uploading"></button>
         <button pButton label="Sair" class="p-button-secondary" (click)="logout()"></button>
       </div>
     </div>
 
-    <p-table [value]="pessoas" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10">
+    <p-table #dt [value]="pessoas" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10" [globalFilterFields]="['contato','primeiroNome']">
       <ng-template pTemplate="header">
         <tr>
           <th>Contato</th>
@@ -60,7 +64,8 @@ interface PessoaMagicDto {
   styles: [`
     .container { padding: 1rem; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-    .actions { display: flex; align-items: center; gap: .5rem; }
+    .actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .actions .filter { margin-right: auto; }
     .hint { color: #666; }
   `]
 })
@@ -115,6 +120,11 @@ export class AdminPessoasComponent implements OnInit {
     }).catch(() => {
       this.msg.add({severity:'warn', summary:'Atenção', detail:'Não foi possível copiar automaticamente'});
     });
+  }
+
+  openLink(p: PessoaMagicDto) {
+    const url = `${location.origin}/${p.slug}`;
+    window.open(url, '_blank');
   }
 
   logout() {
