@@ -26,7 +26,7 @@ app:
   security:
     admin-username: ${ADMIN_USERNAME:admin}
     admin-password: ${ADMIN_PASSWORD:admin123}
-    jwt-secret: ${JWT_SECRET:dev-secret-please-change}
+    jwt-secret: ${JWT_SECRET:dev-secret-please-change-dev-secret-32bytes-min-123456}
     jwt-expiration-minutes: 120
 
 ---

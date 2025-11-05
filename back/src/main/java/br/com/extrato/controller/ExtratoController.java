@@ -33,6 +33,10 @@ public class ExtratoController {
         }
         String primeiroNome = slug.substring(0, idx);
         String numeroMagico = slug.substring(idx + 1);
+        // Validate numeroMagico: must be exactly 8 Base62 chars
+        if (numeroMagico.length() != 8 || !numeroMagico.matches("[0-9A-Za-z]{8}")) {
+            return ResponseEntity.notFound().build();
+        }
 
         Optional<Pessoa> pessoaOpt = pessoaRepository.findByPrimeiroNomeAndNumeroMagico(primeiroNome, numeroMagico);
         if (pessoaOpt.isEmpty()) {

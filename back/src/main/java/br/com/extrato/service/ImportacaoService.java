@@ -87,7 +87,7 @@ public class ImportacaoService {
         for (String contato : contatos) {
             if (!existentes.containsKey(contato)) {
                 String primeiroNome = NameNormalizer.primeiroNomeParaSlug(contato);
-                String numeroMagico = Base62.randomBase62(16);
+                String numeroMagico = Base62.randomBase62(8);
                 Pessoa p = Pessoa.builder()
                         .contato(contato)
                         .primeiroNome(primeiroNome)
