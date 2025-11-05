@@ -1,0 +1,30 @@
+# Multi-stage build for Angular frontend served by Nginx
+
+# 1) Build stage
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY front /app
+RUN npm ci --no-audit --no-fund \
+ && npm run build:prod
+
+# 2) Runtime stage (Nginx)
+FROM nginx:1.27-alpine
+
+# Install envsubst (gettext) for templating
+RUN apk add --no-cache gettext
+
+# We will generate nginx conf from a template so we can inject BACKEND_URL and PORT at runtime
+ENV BACKEND_URL="http://localhost:9000" \
+    PORT=80
+
+# Copy built assets
+COPY --from=build /app/dist/extrato-front /usr/share/nginx/html
+
+# Copy nginx template and entrypoint
+COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/entrypoint.front.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

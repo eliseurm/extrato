@@ -1,34 +1,31 @@
 version: '3.9'
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: extrato_db
-      POSTGRES_USER: extrato_user
-      POSTGRES_PASSWORD: Extrato_pwd#123
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U extrato_user"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
   back:
+    image: extrato-back
     build:
       context: ..
       dockerfile: docker/Dockerfile.back
     environment:
       SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/extrato_db
-      DB_USERNAME: extrato_user
-      DB_PASSWORD: Extrato_pwd#123
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin123
-      JWT_SECRET: dev-secret-please-change-dev-dev-dev
+      # Expect external DB. Provide via environment before running compose.
+      # Required: DB_HOST, DB_NAME, DB_USERNAME, DB_PASSWORD
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-please-change-dev-dev-dev-32bytes-min}
     ports:
-      - "8080:8080"
+      - "9000:9000"
+
+  front:
+    image: extrato-front
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.front
+    environment:
+      BACKEND_URL: http://back:9000
+    ports:
+      - "8080:80"
     depends_on:
-      db:
-        condition: service_healthy
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - back

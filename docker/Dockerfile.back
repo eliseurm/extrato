@@ -5,12 +5,13 @@ FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 COPY back /workspace/back
 WORKDIR /workspace/back
-RUN mvn -q -e -DskipTests clean package
+RUN mvn -q -DskipTests clean package
 
 # 2) Run stage
 FROM eclipse-temurin:17-jre-jammy
 ENV JAVA_OPTS=""
 WORKDIR /app
-COPY --from=build /workspace/back/target/*.jar /app/app.jar
-EXPOSE 8080
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+# Copy only the Spring Boot fat jar (exclude *-plain.jar). We'll resolve at runtime via wildcard.
+COPY --from=build /workspace/back/target/*-SNAPSHOT.jar /app/
+EXPOSE 9000
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/*-SNAPSHOT.jar"]
