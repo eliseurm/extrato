@@ -15,12 +15,13 @@ set -euo pipefail
 #   Frontend: http://localhost:8080
 #   Backend API (optional direct): http://localhost:9000
 
-export DB_HOST=localhost
+# Tip: se seu Postgres está na própria máquina (host) e você usa Linux, o IP padrão do host visto pelo container costuma ser 172.17.0.1.
+# Ajuste DB_HOST abaixo conforme seu ambiente.
+export DB_HOST=172.17.0.1
 export DB_PORT=5432
 export DB_NAME=extrato_db
 export DB_USERNAME=extrato_user
 export DB_PASSWORD='Extrato_pwd#123'
-# opcionais:
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD=admin123
 export JWT_SECRET='uma-chave-bem-longa-de-dev-32bytes-min'
@@ -39,7 +40,8 @@ DB_PORT="${DB_PORT:-5432}" \
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}" \
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin123}" \
 JWT_SECRET="${JWT_SECRET:-dev-secret-please-change-dev-dev-dev-32bytes-min}" \
-DB_HOST="$DB_HOST" DB_NAME="$DB_NAME" DB_USERNAME="$DB_USERNAME" DB_PASSWORD="$DB_PASSWORD" \
+SPRING_DATASOURCE_URL="jdbc:postgresql://$DB_HOST:${DB_PORT:-5432}/$DB_NAME" \
+DB_USERNAME="$DB_USERNAME" DB_PASSWORD="$DB_PASSWORD" \
   docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build
 
 # Show status and helpful commands

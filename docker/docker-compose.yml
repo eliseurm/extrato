@@ -1,15 +1,14 @@
-version: '3.9'
 services:
   back:
+    container_name: extrato-back
     image: extrato-back
     build:
       context: ..
       dockerfile: docker/Dockerfile.back
     environment:
       SPRING_PROFILES_ACTIVE: local
-      # Expect external DB. Provide via environment before running compose.
-      # Required: DB_HOST, DB_NAME, DB_USERNAME, DB_PASSWORD
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}
+      # Pass the fully composed JDBC URL from the script to avoid compose-time substitution issues
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
@@ -19,6 +18,7 @@ services:
       - "9000:9000"
 
   front:
+    container_name: extrato-front
     image: extrato-front
     build:
       context: ..

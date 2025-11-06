@@ -1,0 +1,13 @@
+# Cloud Build config to build & push backend image using docker/Dockerfile.back
+# Usage (from deploy script):
+# gcloud builds submit . --config docker/cloudbuild.back.yaml --substitutions _IMAGE=gcr.io/${PROJECT_ID}/${SERVICE_BACK}:latest
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'docker/Dockerfile.back', '-t', '$_IMAGE', '.']
+
+images:
+  - '$_IMAGE'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -29,10 +29,25 @@ set -euo pipefail
 #   # demais variáveis iguais ao exemplo acima
 #   ./docker/deploy-cloudrun.sh
 
+
+export PROJECT_ID=clube-project
+export REGION=southamerica-east1
+export SERVICE_BACK=extrato-back
+export SERVICE_FRONT=extrato-front
+export USE_CONNECTOR=true
+export INSTANCE_CONNECTION_NAME="clube-project:southamerica-east1:clube-sql"
+export DB_NAME=extrato_db
+export DB_USERNAME=extrato_user
+export DB_PASSWORD='Extrato_pwd#123'
+export ADMIN_USERNAME=admin
+export ADMIN_PASSWORD=admin123
+export JWT_SECRET='uma-chave-bem-longa-de-dev-32bytes-min'
+
+
 : "${PROJECT_ID:?Defina PROJECT_ID}"
 : "${REGION:?Defina REGION}"
-: "${SERVICE_BACK:?Defina SERVICE_BACK (nome do serviço backend)}"
-: "${SERVICE_FRONT:?Defina SERVICE_FRONT (nome do serviço frontend)}"
+: "${SERVICE_BACK:?Defina SERVICE_BACK extrato-back}"
+: "${SERVICE_FRONT:?Defina SERVICE_FRONT extrato-front}"
 
 : "${DB_NAME:?Defina DB_NAME}"
 : "${DB_USERNAME:?Defina DB_USERNAME}"
@@ -44,20 +59,31 @@ set -euo pipefail
 USE_CONNECTOR=${USE_CONNECTOR:-true}
 DB_PORT=${DB_PORT:-5432}
 
-IMAGE_BACK="gcr.io/${PROJECT_ID}/${SERVICE_BACK}:latest"
-IMAGE_FRONT="gcr.io/${PROJECT_ID}/${SERVICE_FRONT}:latest"
+#IMAGE_BACK="gcr.io/${PROJECT_ID}/${SERVICE_BACK}:latest"
+#IMAGE_FRONT="gcr.io/${PROJECT_ID}/${SERVICE_FRONT}:latest"
+
+IMAGE_BACK="southamerica-east1-docker.pkg.dev/${PROJECT_ID}/extrato/${SERVICE_BACK}:latest"
+IMAGE_FRONT="southamerica-east1-docker.pkg.dev/${PROJECT_ID}/extrato/${SERVICE_FRONT}:latest"
 
 ROOT_DIR="$(cd "$(dirname "$0")"/.. && pwd)"
 
-# Build & push images via Cloud Build (using explicit Dockerfiles)
-echo "[cloudrun] Buildando e publicando backend (Dockerfile.back)..."
-gcloud builds submit "${ROOT_DIR}" --tag "${IMAGE_BACK}" --file docker/Dockerfile.back --timeout=30m
+# Habilitar servicos
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com sqladmin.googleapis.com
 
-echo "[cloudrun] Buildando e publicando frontend (Dockerfile.front)..."
-gcloud builds submit "${ROOT_DIR}" --tag "${IMAGE_FRONT}" --file docker/Dockerfile.front --timeout=30m
+# Cria um repositorio para docker chamado extrato, ignorando o erro se ele já existir.
+echo "[cloudrun] Cria um repositorio para docker chamado 'extrato'..."
+gcloud artifacts repositories create extrato --repository-format=docker --location=southamerica-east1 --description="Repositório Extrato" --async 2> /dev/null || true
+
+# Build & push images via Cloud Build (using explicit Dockerfiles)
+echo "[cloudrun] Buildando e publicando backend (Dockerfile.back via Cloud Build config)..."
+gcloud builds submit "${ROOT_DIR}" --config cloudbuild.back.yaml --substitutions _IMAGE="${IMAGE_BACK}" --timeout=30m
+
+echo "[cloudrun] Buildando e publicando frontend (Dockerfile.front via Cloud Build config)..."
+gcloud builds submit "${ROOT_DIR}" --config cloudbuild.front.yaml --substitutions _IMAGE="${IMAGE_FRONT}" --timeout=30m
+
 
 # Deploy backend
-echo "[cloudrun] Fazendo deploy do backend (${SERVICE_BACK}) em ${REGION}..."
+echo "[cloudrun] Fazendo a implantacao do backend (${SERVICE_BACK}) em ${REGION}..."
 BACK_ARGS=(
   run deploy "${SERVICE_BACK}"
   --region "${REGION}"
@@ -65,24 +91,29 @@ BACK_ARGS=(
   --platform managed
   --allow-unauthenticated
   --port 9000
-  --set-env-vars SPRING_PROFILES_ACTIVE=prod
-  --set-env-vars DB_NAME="${DB_NAME}",DB_USERNAME="${DB_USERNAME}",DB_PASSWORD="${DB_PASSWORD}"
-  --set-env-vars ADMIN_USERNAME="${ADMIN_USERNAME}",ADMIN_PASSWORD="${ADMIN_PASSWORD}",JWT_SECRET="${JWT_SECRET}"
 )
+
+ENV_VARS_STRING="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${DB_NAME},DB_USERNAME=${DB_USERNAME},DB_PASSWORD=${DB_PASSWORD},ADMIN_USERNAME=${ADMIN_USERNAME},ADMIN_PASSWORD=${ADMIN_PASSWORD},JWT_SECRET=${JWT_SECRET}"
 
 if [ "${USE_CONNECTOR}" = "true" ]; then
   : "${INSTANCE_CONNECTION_NAME:?Defina INSTANCE_CONNECTION_NAME para USE_CONNECTOR=true}"
   BACK_ARGS+=(
     --add-cloudsql-instances "${INSTANCE_CONNECTION_NAME}"
-    --set-env-vars SPRING_DATASOURCE_URL="jdbc:postgresql:///${DB_NAME}?socketFactory=com.google.cloud.sql.postgres.SocketFactory&socketFactoryArg=${INSTANCE_CONNECTION_NAME}"
   )
+#  ENV_VARS_STRING="${ENV_VARS_STRING},SPRING_DATASOURCE_URL=jdbc:postgresql:///${DB_NAME}?socketFactory=com.google.cloud.sql.postgres.SocketFactory&socketFactoryArg=${INSTANCE_CONNECTION_NAME}"
+  ENV_VARS_STRING="${ENV_VARS_STRING},SPRING_DATASOURCE_URL=jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${INSTANCE_CONNECTION_NAME}&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
 else
   : "${DB_HOST:?Defina DB_HOST quando USE_CONNECTOR=false}"
   BACK_ARGS+=(
     --set-env-vars SPRING_DATASOURCE_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
   )
+  ENV_VARS_STRING="${ENV_VARS_STRING},SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
 fi
+BACK_ARGS+=(
+  --set-env-vars "${ENV_VARS_STRING}"
+)
 
+echo "gcloud ${BACK_ARGS[@]}"
 gcloud "${BACK_ARGS[@]}"
 
 # Discover backend URL
@@ -102,7 +133,7 @@ gcloud run deploy "${SERVICE_FRONT}" \
   --platform managed \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars BACKEND_URL="${BACK_URL}",PORT=8080
+  --set-env-vars BACKEND_URL="${BACK_URL}"
 
 FRONT_URL=$(gcloud run services describe "${SERVICE_FRONT}" --region "${REGION}" --format='value(status.url)')
 

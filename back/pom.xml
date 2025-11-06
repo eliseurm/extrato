@@ -61,6 +61,12 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+        <!-- Cloud SQL Socket Factory (for Cloud Run Connector) -->
+        <dependency>
+            <groupId>com.google.cloud.sql</groupId>
+            <artifactId>postgres-socket-factory</artifactId>
+            <version>1.13.1</version>
+        </dependency>
 
         <!-- CSV parsing -->
         <dependency>
@@ -124,6 +130,13 @@
                 <configuration>
                     <mainClass>br.com.extrato.ExtratoApplication</mainClass>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
