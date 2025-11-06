@@ -132,6 +132,7 @@ gcloud run deploy "${SERVICE_FRONT}" \
   --image "${IMAGE_FRONT}" \
   --platform managed \
   --allow-unauthenticated \
+  --container-privileged \
   --port 8080 \
   --set-env-vars BACKEND_URL="${BACK_URL}"
 

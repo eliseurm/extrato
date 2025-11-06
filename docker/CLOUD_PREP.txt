@@ -55,7 +55,11 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${
 
 gcloud org-policies describe run.restrictPublicService --project=clube-project --file=policy-config.yaml
 gcloud run services add-iam-policy-binding extrato-front --member="allUsers" --role="roles/run.invoker" --region="southamerica-east1"
+gcloud run services add-iam-policy-binding extrato-front --region=southamerica-east1 --member="allUsers" --role="roles/run.invoker"
 gcloud run services add-iam-policy-binding extrato-front --member="user:secretaria@mensageiros.udi.br" --role="roles/run.invoker" --region="southamerica-east1"
+gcloud run services describe extrato-front --region=southamerica-east1 --format='value(spec.template.metadata.annotations.servicemesh.googleapis.com~1ingress)'
+
+
 
 # SA do Cloud Build (executa o build/push):
 CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
