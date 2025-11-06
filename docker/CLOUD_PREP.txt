@@ -53,11 +53,10 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${
 gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${SA}" --role="roles/logging.logWriter"
 gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${SA}" --role="roles/artifactregistry.admin"
 
-gcloud org-policies describe run.restrictPublicService --project=clube-project --file=policy-config.yaml
-gcloud run services add-iam-policy-binding extrato-front --member="allUsers" --role="roles/run.invoker" --region="southamerica-east1"
+# Para dar acesso irestrito a url.
+gcloud run services add-iam-policy-binding extrato-front --member="user:secretaria@mensageiros.udi.br" --role="roles/orgpolicy.policyAdmin" --region="southamerica-east1"
+# No menu: IAM e admin -> Politica da organizacao, edite a restricao 'iam.allowedPolicyMemberDomains' e deixe o google gerenciar, depois de acesso allUser
 gcloud run services add-iam-policy-binding extrato-front --region=southamerica-east1 --member="allUsers" --role="roles/run.invoker"
-gcloud run services add-iam-policy-binding extrato-front --member="user:secretaria@mensageiros.udi.br" --role="roles/run.invoker" --region="southamerica-east1"
-gcloud run services describe extrato-front --region=southamerica-east1 --format='value(spec.template.metadata.annotations.servicemesh.googleapis.com~1ingress)'
 
 
 
@@ -144,3 +143,16 @@ Checklist rápido
 [ ] DB, usuário e senha existentes
 [ ] JWT_SECRET com ≥ 32 bytes
 [ ] (Se Connector) Dependência postgres-socket-factory adicionada ao pom.xml do backend
+
+
+Comandos para teste
+
+
+# Testa login direto no back
+curl -i -X POST "https://extrato-back-4eyszdohya-rj.a.run.app/api/auth/login"   -H 'Content-Type: application/json'   -d '{"username":"admin","password":"admin123"}'
+
+# Testa via front
+FRONT_URL=$(gcloud run services describe extrato-front --region southamerica-east1 --format='value(status.url)'); echo $FRONT_URL ;
+curl -i -X POST "$FRONT_URL/api/auth/login" -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin123"}'
+
+

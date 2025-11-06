@@ -74,12 +74,30 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
 echo "[cloudrun] Cria um repositorio para docker chamado 'extrato'..."
 gcloud artifacts repositories create extrato --repository-format=docker --location=southamerica-east1 --description="Repositório Extrato" --async 2> /dev/null || true
 
-# Build & push images via Cloud Build (using explicit Dockerfiles)
-echo "[cloudrun] Buildando e publicando backend (Dockerfile.back via Cloud Build config)..."
-gcloud builds submit "${ROOT_DIR}" --config cloudbuild.back.yaml --substitutions _IMAGE="${IMAGE_BACK}" --timeout=30m
 
-echo "[cloudrun] Buildando e publicando frontend (Dockerfile.front via Cloud Build config)..."
-gcloud builds submit "${ROOT_DIR}" --config cloudbuild.front.yaml --substitutions _IMAGE="${IMAGE_FRONT}" --timeout=30m
+# Build & push images via Cloud Build (using explicit Dockerfiles)
+#echo "[cloudrun] Buildando e publicando backend (Dockerfile.back via Cloud Build config)..."
+#gcloud builds submit "${ROOT_DIR}" --config cloudbuild.back.yaml --substitutions _IMAGE="${IMAGE_BACK}" --timeout=30m
+#
+#echo "[cloudrun] Buildando e publicando frontend (Dockerfile.front via Cloud Build config)..."
+#gcloud builds submit "${ROOT_DIR}" --config cloudbuild.front.yaml --substitutions _IMAGE="${IMAGE_FRONT}" --timeout=30m
+
+
+# Build & push images locally with Docker (no Cloud Build)
+echo "[cloudrun] Configurando autenticação do Docker para o Artifact Registry..."
+gcloud auth configure-docker southamerica-east1-docker.pkg.dev -q
+
+# Backend
+# Using explicit Dockerfile for backend
+echo "[cloudrun] Buildando backend localmente (docker/Dockerfile.back) e publicando..."
+docker build -f Dockerfile.back -t "${IMAGE_BACK}" "${ROOT_DIR}"
+docker push "${IMAGE_BACK}"
+
+# Frontend
+# Using explicit Dockerfile for frontend
+echo "[cloudrun] Buildando frontend localmente (docker/Dockerfile.front) e publicando..."
+docker build -f Dockerfile.front -t "${IMAGE_FRONT}" "${ROOT_DIR}"
+docker push "${IMAGE_FRONT}"
 
 
 # Deploy backend
@@ -132,7 +150,6 @@ gcloud run deploy "${SERVICE_FRONT}" \
   --image "${IMAGE_FRONT}" \
   --platform managed \
   --allow-unauthenticated \
-  --container-privileged \
   --port 8080 \
   --set-env-vars BACKEND_URL="${BACK_URL}"
 

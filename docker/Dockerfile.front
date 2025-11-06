@@ -4,8 +4,7 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY front /app
-RUN npm ci --no-audit --no-fund \
- && npm run build:prod
+RUN npm ci --no-audit --no-fund && npm run build:prod
 
 # 2) Runtime stage (Nginx)
 FROM nginx:1.27-alpine
@@ -14,8 +13,7 @@ FROM nginx:1.27-alpine
 RUN apk add --no-cache gettext
 
 # We will generate nginx conf from a template so we can inject BACKEND_URL and PORT at runtime
-ENV BACKEND_URL="http://localhost:9000" \
-    PORT=80
+ENV BACKEND_URL="http://localhost:9000" PORT=80
 
 # Copy built assets
 COPY --from=build /app/dist/extrato-front /usr/share/nginx/html
