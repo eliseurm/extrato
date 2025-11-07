@@ -27,6 +27,7 @@ interface PessoaMagicDto {
         <span class="filter">
           <input pInputText type="text" placeholder="Filtrar por nome" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
         </span>
+        <button pButton label="Exportalinks" class="p-button-success" (click)="exportLinks()"></button>
         <input type="file" (change)="onFile($event)" accept=".csv" />
         <button pButton label="Importar CSV" (click)="upload()" [disabled]="!file || uploading"></button>
         <button pButton label="Sair" class="p-button-secondary" (click)="logout()"></button>
@@ -49,8 +50,9 @@ interface PessoaMagicDto {
           <td>{{ p.primeiroNome }}</td>
           <td>{{ p.numeroMagico }}</td>
           <td>{{ p.slug }}</td>
-          <td>
+          <td class="acoes">
             <button pButton size="small" label="Abrir link" (click)="openLink(p)"></button>
+            <button pButton size="small" label="Copiar link" class="p-button-secondary" (click)="copyLink(p)"></button>
           </td>
         </tr>
       </ng-template>
@@ -114,7 +116,9 @@ export class AdminPessoasComponent implements OnInit {
   }
 
   copyLink(p: PessoaMagicDto) {
-    const url = `${location.origin}/${p.slug}`;
+    // Usar o mesmo domínio da aplicação atual e incluir o prefixo /extrato/
+    const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
+    const url = `${origin}/extrato/${p.slug}`;
     navigator.clipboard.writeText(url).then(() => {
       this.msg.add({severity:'success', summary:'Copiado', detail:'Link copiado para a área de transferência'});
     }).catch(() => {
@@ -123,8 +127,38 @@ export class AdminPessoasComponent implements OnInit {
   }
 
   openLink(p: PessoaMagicDto) {
-    const url = `${location.origin}/${p.slug}`;
+    // Abrir na mesma origem do app com o prefixo /extrato/
+    const url = `/extrato/${p.slug}`;
     window.open(url, '_blank');
+  }
+
+  exportLinks() {
+    // Exporta arquivo CSV conforme especificado, usando o mesmo domínio do ambiente atual
+    const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
+    const blocks: string[] = [];
+    for (const p of this.pessoas) {
+      const link = `${origin}/extrato/${p.slug}`;
+      // Formato exatamente como o exemplo fornecido:
+      // <nome_completo>; <link>
+      //
+      // *Tesouraria Clube Mensageiros*
+      // Entre neste link sempre que quiser saber sobre pagamentos.
+      // Você pode guardar este link em seus favoritos e usar sempre o mesmo.;
+      const primeiraLinha = `${p.contato}; ${link}`;
+      const mensagem = `*Tesouraria Clube Mensageiros*\nEntre neste link sempre que quiser saber sobre pagamentos.\nVocê pode guardar este link em seus favoritos e usar sempre o mesmo.;`;
+      const bloco = `${primeiraLinha}\n\n${mensagem}`;
+      blocks.push(bloco);
+    }
+    const content = blocks.join('\n\n');
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'links_extrato.csv';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+    this.msg.add({severity:'success', summary:'Exportado', detail:`${this.pessoas.length} link(s) gerados`});
   }
 
   logout() {

@@ -5,6 +5,7 @@ import { ExtratoResponse, ExtratoService, LancamentoDto } from '../extrato.servi
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { FormsModule } from '@angular/forms';
 
 interface GroupedLancamentos {
   projeto: string;
@@ -14,10 +15,21 @@ interface GroupedLancamentos {
 @Component({
   selector: 'app-extrato-individual',
   standalone: true,
-  imports: [CommonModule, ScrollingModule, TableModule, ProgressSpinnerModule],
+  imports: [CommonModule, FormsModule, ScrollingModule, TableModule, ProgressSpinnerModule],
   template: `
   <div class="container">
-    <h2 *ngIf="nome" class="titulo">Extrato de {{ nome }}</h2>
+    <div class="header">
+      <div class="left">
+        <h2 *ngIf="nome" class="titulo">Extrato de {{ nome }}</h2>
+        <div class="atualizacao" *ngIf="ultimaAtualizacao">Última Atualização: {{ ultimaAtualizacao | date:'dd/MM/yyyy' }}</div>
+      </div>
+      <div class="right">
+        <label for="anoSel">Ano:</label>
+        <select id="anoSel" [(ngModel)]="selectedYear" (ngModelChange)="onYearChange($event)" [disabled]="!yearOptions.length">
+          <option *ngFor="let y of yearOptions" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+    </div>
 
     <p *ngIf="loading" class="loading"><p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner></p>
     <p *ngIf="!loading && erro" class="erro">{{ erro }}</p>
@@ -72,7 +84,11 @@ interface GroupedLancamentos {
   `,
   styles: [`
     .container { padding: .5rem .75rem; }
-    .titulo { margin: 0 0 .5rem; font-size: 1rem; }
+    .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .left { display: flex; flex-direction: column; gap: .15rem; }
+    .right { margin-left: auto; }
+    .titulo { margin: 0; font-size: 1rem; }
+    .atualizacao { font-size: .85rem; color: #555; }
     .loading, .erro { text-align: center; margin-top: 1rem; }
     .viewport { height: calc(100vh - 96px); width: 100%; }
 
@@ -114,50 +130,106 @@ export class ExtratoIndividualComponent implements OnInit {
   grouped: GroupedLancamentos[] = [];
   loading = true;
   erro: string | null = null;
+  ultimaAtualizacao: string | null = null;
+
+  // Filtro por ano (anos distintos vindos do backend para a pessoa)
+  yearOptions: number[] = [];
+  selectedYear: number | null = null;
+
+  private original: LancamentoDto[] = [];
 
   constructor(private route: ActivatedRoute, private extratoSvc: ExtratoService) {}
 
   ngOnInit(): void {
     const slug = this.route.snapshot.paramMap.get('slug') || '';
+    // 1ª carga sem filtro para descobrir anos e última atualização
     this.extratoSvc.getExtrato(slug).subscribe({
       next: (resp) => {
         this.nome = resp.pessoaNome;
-        const sorted = [...resp.lancamentos].sort((a, b) => {
-          const cmpProj = this.compareStr(a.projeto, b.projeto);
-          if (cmpProj !== 0) return cmpProj;
-          const cmpCat = this.compareStr(a.categoria ?? '', b.categoria ?? '');
-          if (cmpCat !== 0) return cmpCat;
-          const cmpTipo = this.compareStr(a.tipo, b.tipo);
-          if (cmpTipo !== 0) return cmpTipo;
-          const cmpPrev = this.compareDate(a.dataPrevista, b.dataPrevista);
-          if (cmpPrev !== 0) return cmpPrev;
-          const cmpEfet = this.compareDate(a.dataEfetiva, b.dataEfetiva);
-          if (cmpEfet !== 0) return cmpEfet;
-          return this.compareStr(a.status, b.status);
-        });
-        const byProjeto = new Map<string, LancamentoDto[]>();
-        for (const l of sorted) {
-          const key = l.projeto || '';
-          if (!byProjeto.has(key)) byProjeto.set(key, []);
-          byProjeto.get(key)!.push(l);
+        this.original = resp.lancamentos ?? [];
+        this.ultimaAtualizacao = resp.ultimaAtualizacao ?? null;
+
+        // usar anos vindos do backend para a pessoa
+        const anos = Array.isArray(resp.anosDisponiveis) ? resp.anosDisponiveis : [];
+        this.yearOptions = [...anos].sort((a,b)=> b - a);
+
+        // Seleciona automaticamente o ano atual se existir, senão o mais recente
+        const current = new Date().getFullYear();
+        const initial = this.yearOptions.includes(current) ? current : (this.yearOptions[0] ?? null);
+        this.selectedYear = initial;
+
+        if (this.selectedYear != null) {
+          // Buscar dados do ano selecionado (sempre refetch)
+          this.fetchByYear(slug, this.selectedYear);
+          return;
         }
-        // montar grupos e categorias já na ordem
-        this.grouped = Array.from(byProjeto.entries()).map(([projeto, itens]) => {
-          const byCat = new Map<string | null, LancamentoDto[]>();
-          for (const it of itens) {
-            const ck = it.categoria ?? null;
-            if (!byCat.has(ck)) byCat.set(ck, []);
-            byCat.get(ck)!.push(it);
-          }
-          const categorias = Array.from(byCat.entries()).map(([nome, its]) => ({ nome, itens: its }));
-          return { projeto, categorias } as GroupedLancamentos;
-        });
+        // Sem anos disponíveis: apenas mostra grupo vazio (ou todos já carregados)
+        this.rebuildGroups();
         this.loading = false;
       },
       error: (e) => {
         this.erro = e?.status === 404 ? 'Extrato não encontrado' : 'Erro ao carregar extrato';
         this.loading = false;
       }
+    });
+  }
+
+  onYearChange(_: any) {
+    const slug = this.route.snapshot.paramMap.get('slug') || '';
+    if (this.selectedYear != null) {
+      this.fetchByYear(slug, this.selectedYear);
+    }
+  }
+
+  private fetchByYear(slug: string, year: number) {
+    this.loading = true;
+    this.extratoSvc.getExtrato(slug, year).subscribe({
+      next: (resp) => {
+        this.original = resp.lancamentos ?? [];
+        this.ultimaAtualizacao = resp.ultimaAtualizacao ?? null;
+        this.rebuildGroups();
+        this.loading = false;
+      },
+      error: () => { this.erro = 'Erro ao carregar extrato'; this.loading = false; }
+    });
+  }
+
+  private rebuildGroups() {
+    // Se não houver ano selecionado (null), usa todos os itens; caso contrário filtra pelo ano selecionado
+    const base = this.selectedYear == null ? [...this.original] : this.original.filter(l => {
+        return this.yearFromDate(l.dataPrevista) == this.selectedYear;
+    });
+
+    const sorted = base.sort((a, b) => {
+      const cmpProj = this.compareStr(a.projeto, b.projeto);
+      if (cmpProj !== 0) return cmpProj;
+      const cmpCat = this.compareStr(a.categoria ?? '', b.categoria ?? '');
+      if (cmpCat !== 0) return cmpCat;
+      const cmpTipo = this.compareStr(a.tipo, b.tipo);
+      if (cmpTipo !== 0) return cmpTipo;
+      const cmpPrev = this.compareDate(a.dataPrevista, b.dataPrevista);
+      if (cmpPrev !== 0) return cmpPrev;
+      const cmpEfet = this.compareDate(a.dataEfetiva, b.dataEfetiva);
+      if (cmpEfet !== 0) return cmpEfet;
+      return this.compareStr(a.status, b.status);
+    });
+
+    const byProjeto = new Map<string, LancamentoDto[]>();
+    for (const l of sorted) {
+      const key = l.projeto || '';
+      if (!byProjeto.has(key)) byProjeto.set(key, []);
+      byProjeto.get(key)!.push(l);
+    }
+    // montar grupos e categorias já na ordem
+    this.grouped = Array.from(byProjeto.entries()).map(([projeto, itens]) => {
+      const byCat = new Map<string | null, LancamentoDto[]>();
+      for (const it of itens) {
+        const ck = it.categoria ?? null;
+        if (!byCat.has(ck)) byCat.set(ck, []);
+        byCat.get(ck)!.push(it);
+      }
+      const categorias = Array.from(byCat.entries()).map(([nome, its]) => ({ nome, itens: its }));
+      return { projeto, categorias } as GroupedLancamentos;
     });
   }
 
@@ -174,9 +246,24 @@ export class ExtratoIndividualComponent implements OnInit {
   }
 
   totalPorStatus(items: LancamentoDto[], status: string): number {
+    const target = (status || '').toLowerCase();
     return items
-      .filter(i => (i.status || '').toLowerCase().includes(status.toLowerCase()))
-      .reduce((sum, i) => sum + (i.valorPrevisto ?? 0), 0);
+      .filter(i => (i.status || '').toLowerCase().includes(target))
+      .reduce((sum, i) => {
+        // Regra solicitada: para "Confirmado", somar valorEfetivo; demais usam valorPrevisto
+        const isConfirm = target.includes('confirm');
+        const val = isConfirm ? (i.valorEfetivo ?? 0) : (i.valorPrevisto ?? 0);
+        return sum + val;
+      }, 0);
+  }
+
+  private yearFromDate(dateStr: string | null | undefined): number | null {
+    if (!dateStr) return null;
+    // Expecting ISO yyyy-MM-dd or similar parseable by Date
+    const m = /^\d{4}/.exec(dateStr);
+    if (m) return parseInt(m[0], 10);
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d.getFullYear();
   }
 
   private compareStr(a: string | null | undefined, b: string | null | undefined): number {

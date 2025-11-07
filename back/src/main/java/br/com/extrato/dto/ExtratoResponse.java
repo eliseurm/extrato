@@ -14,4 +14,6 @@ import java.util.List;
 public class ExtratoResponse {
     private String pessoaNome;
     private List<LancamentoDto> lancamentos;
+    private String ultimaAtualizacao; // ISO yyyy-MM-dd
+    private List<Integer> anosDisponiveis; // anos distintos de dataPrevista para a pessoa
 }

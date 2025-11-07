@@ -33,8 +33,8 @@ export REGION=southamerica-east1
 export SERVICE_FRONT=extrato-front
 export DOMAIN_NAME=mensageiros.udi.br
 # optional
-export USE_CLOUD_DNS=true
-export DNS_ZONE=public-zone
+#export USE_CLOUD_DNS=true
+#export DNS_ZONE=public-zone
 #   ./docker/register-domain-firebase.sh
 #
 
@@ -46,6 +46,9 @@ FIREBASE_SITE_ID=${FIREBASE_SITE_ID:-}
 USE_CLOUD_DNS=${USE_CLOUD_DNS:-false}
 DNS_ZONE=${DNS_ZONE:-}
 DRY_RUN=${DRY_RUN:-false}
+
+#echo "Elevando a versao no node"
+#nvm use 20
 
 log() { echo "[firebase-domain] $*"; }
 err() { echo "[firebase-domain][ERROR] $*" >&2; }

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -25,7 +26,7 @@ public class ExtratoController {
     private final LancamentoRepository lancamentoRepository;
 
     @GetMapping("/{slug}")
-    public ResponseEntity<ExtratoResponse> obterExtrato(@PathVariable("slug") String slug) {
+    public ResponseEntity<ExtratoResponse> obterExtrato(@PathVariable("slug") String slug, @RequestParam(value = "year", required = false) Integer year) {
         // slug format: primeiroNome_numeroMagico
         int idx = slug.lastIndexOf('_');
         if (idx <= 0 || idx >= slug.length() - 1) {
@@ -43,7 +44,16 @@ public class ExtratoController {
             return ResponseEntity.notFound().build();
         }
         Pessoa pessoa = pessoaOpt.get();
-        var lancs = lancamentoRepository.findByPessoaOrderByDataAsc(pessoa);
+
+        List<br.com.extrato.domain.Lancamento> lancs;
+        if (year != null) {
+            java.time.LocalDate start = java.time.LocalDate.of(year, 1, 1);
+            java.time.LocalDate end = java.time.LocalDate.of(year, 12, 31);
+            lancs = lancamentoRepository.findByPessoaAndDataPrevistaBetweenOrderByDataAsc(pessoa, start, end);
+        } else {
+            lancs = lancamentoRepository.findByPessoaOrderByDataAsc(pessoa);
+        }
+
         List<LancamentoDto> dtoList = lancs.stream().map(l -> LancamentoDto.builder()
                 .nome(pessoa.getContato())
                 .dataPrevista(l.getDataPrevista())
@@ -57,9 +67,17 @@ public class ExtratoController {
                 .categoria(l.getCategoria())
                 .build()).collect(Collectors.toList());
 
+        java.time.LocalDate maxCriacao = lancamentoRepository.findMaxDataCriacao();
+        String ultimaAtualizacao = maxCriacao != null ? maxCriacao.toString() : null;
+
+        // anos distintos disponíveis para a pessoa (derivados de dataPrevista)
+        List<Integer> anosDisponiveis = lancamentoRepository.findDistinctYearsByPessoa(pessoa);
+
         ExtratoResponse resp = ExtratoResponse.builder()
                 .pessoaNome(pessoa.getContato())
                 .lancamentos(dtoList)
+                .ultimaAtualizacao(ultimaAtualizacao)
+                .anosDisponiveis(anosDisponiveis)
                 .build();
         return ResponseEntity.ok(resp);
     }

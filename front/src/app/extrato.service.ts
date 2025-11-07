@@ -18,13 +18,16 @@ export interface LancamentoDto {
 export interface ExtratoResponse {
   pessoaNome: string;
   lancamentos: LancamentoDto[];
+  ultimaAtualizacao?: string; // ISO date (yyyy-MM-dd) from backend
+  anosDisponiveis?: number[]; // anos distintos de dataPrevista para a pessoa
 }
 
 @Injectable({ providedIn: 'root' })
 export class ExtratoService {
   constructor(private http: HttpClient) {}
 
-  getExtrato(slug: string): Observable<ExtratoResponse> {
-    return this.http.get<ExtratoResponse>(`/api/extrato/${slug}`);
+  getExtrato(slug: string, year?: number): Observable<ExtratoResponse> {
+    const url = year ? `/api/extrato/${slug}?year=${year}` : `/api/extrato/${slug}`;
+    return this.http.get<ExtratoResponse>(url);
   }
 }

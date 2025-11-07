@@ -7,6 +7,8 @@ import { authGuard } from './auth.guard';
 export const routes: Routes = [
   { path: '', component: LoginComponent },
   { path: 'admin/pessoas', component: AdminPessoasComponent, canActivate: [authGuard] },
+  { path: 'extrato/:slug', component: ExtratoIndividualComponent },
+  // Compatibilidade com links antigos sem prefixo
   { path: ':slug', component: ExtratoIndividualComponent },
   { path: '**', redirectTo: '' }
 ];
