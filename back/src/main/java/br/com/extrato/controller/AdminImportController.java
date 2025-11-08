@@ -16,15 +16,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminImportController {
 
-    private final ImportacaoService importacaoService;
-
-    @PostMapping(value = "/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> importar(@RequestPart("file") MultipartFile file) throws IOException {
-        var resumo = importacaoService.importarCSV(file.getInputStream());
-        return ResponseEntity.ok(Map.of(
-                "pessoasNovas", resumo.pessoasNovas,
-                "lancamentosImportados", resumo.lancamentosImportados
-        ));
-    }
+//    private final ImportacaoService importacaoService;
+//
+//    @PostMapping(value = "/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PreAuthorize("hasRole('ADMIN')")
+//    public ResponseEntity<?> importar(@RequestPart("file") MultipartFile file) throws IOException {
+//        var resumo = importacaoService.importarCSV(file.getInputStream());
+//        return ResponseEntity.ok(Map.of(
+//                "pessoasNovas", resumo.pessoasNovas,
+//                "lancamentosImportados", resumo.lancamentosImportados
+//        ));
+//    }
 }

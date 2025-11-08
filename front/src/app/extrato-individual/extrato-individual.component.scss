@@ -1,0 +1,156 @@
+.container {
+  padding: .5rem .75rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.right {
+  margin-left: auto;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.atualizacao {
+  font-size: .85rem;
+  color: #555;
+}
+
+.loading, .erro {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.viewport {
+  height: calc(100vh - 96px);
+  width: 100%;
+}
+
+/* Espaçamento entre agrupamentos */
+.grupo {
+  padding: .5rem 0 1rem;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1rem;
+}
+
+.grupo-titulo {
+  margin: .25rem 0 .5rem;
+  font-size: .95rem;
+}
+
+.categoria-bloco {
+  margin: 0 0 1.25rem;
+}
+
+.categoria-titulo {
+  margin: .25rem 0 .35rem;
+  color: #555;
+  font-size: .9rem;
+}
+
+.tabela-wrapper {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabela th, .tabela td {
+  padding: .25rem .35rem;
+  border-bottom: 1px solid #eee;
+  line-height: 1.1;
+}
+
+.tabela th {
+  background: #fafafa;
+  text-align: left;
+  font-weight: 600;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.status-confirmado {
+  color: #2e7d32;
+}
+
+.status-pendente {
+  color: #c62828;
+}
+
+.status-agendado {
+  color: #1565c0;
+}
+
+/* Totais alinhados à direita, empilhando no mobile */
+.totais td {
+  padding-top: .35rem;
+}
+
+.totais {
+  background: #fcfcfc;
+}
+
+.totais-wrap {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.totais .total {
+  font-weight: 600;
+  font-size: .9em;
+}
+
+.totais .total-confirmado {
+  color: #2e7d32;
+}
+
+.totais .total-pendente {
+  color: #c62828;
+}
+
+.totais .total-agendado {
+  color: #1565c0;
+}
+
+@media (max-width: 768px) {
+  .tabela {
+    font-size: 11px;
+  }
+
+  .tabela th, .tabela td {
+    padding: .2rem .25rem;
+  }
+
+  .titulo {
+    font-size: .95rem;
+  }
+
+  .totais-wrap {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .25rem;
+  }
+}

@@ -74,32 +74,64 @@ public class ImportacaoService {
 
     @Transactional
     protected void processarPessoas(List<CSVRecord> records) {
-        Set<String> contatos = records.stream()
+
+        // 1. Coleta todos os contatos únicos do CSV.
+        Set<String> contatosCSV = records.stream()
                 .map(r -> r.get("Contato").trim())
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        // Buscar já existentes
+        // 2. Busca todas as pessoas existentes no banco.
         Map<String, Pessoa> existentes = pessoaRepository.findAll().stream()
                 .collect(Collectors.toMap(Pessoa::getContato, p -> p));
 
-        List<Pessoa> novos = new ArrayList<>();
-        for (String contato : contatos) {
-            if (!existentes.containsKey(contato)) {
+        List<Pessoa> pessoasParaSalvar = new ArrayList<>();
+
+        // 3. Processa cada contato do CSV para ativar ou criar.
+        for (String contato : contatosCSV) {
+            if (existentes.containsKey(contato)) {
+                // A) Pessoa EXISTE: Ativa e adiciona à lista de salvamento/atualização.
+                Pessoa pessoaExistente = existentes.get(contato);
+
+                // Verifica se a pessoa já está ativa antes de marcar para salvar.
+                if (!pessoaExistente.getAtivo()) {
+                    pessoaExistente.setAtivo(true);
+                    pessoasParaSalvar.add(pessoaExistente);
+                }
+
+                // Remove a pessoa do mapa de existentes para rastrear quem SOBROU
+                existentes.remove(contato);
+
+            } else {
+                // B) Pessoa NÃO EXISTE: Cria nova pessoa e adiciona à lista.
                 String primeiroNome = NameNormalizer.primeiroNomeParaSlug(contato);
                 String numeroMagico = Base62.randomBase62(8);
-                Pessoa p = Pessoa.builder()
+
+                Pessoa novaPessoa = Pessoa.builder()
                         .contato(contato)
                         .primeiroNome(primeiroNome)
                         .numeroMagico(numeroMagico)
+                        .ativo(true) // Já é criada como ativa
                         .build();
-                novos.add(p);
+                pessoasParaSalvar.add(novaPessoa);
             }
         }
-        if (!novos.isEmpty()) {
-            pessoaRepository.saveAll(novos);
+
+        // 4. Desativa as pessoas que NÃO ESTAVAM no CSV (o que sobrou no mapa 'existentes').
+        // O mapa 'existentes' agora contém APENAS as pessoas que ficaram inativas.
+        for (Pessoa inativa : existentes.values()) {
+            if (inativa.getAtivo()) {
+                inativa.setAtivo(false);
+                pessoasParaSalvar.add(inativa);
+            }
+        }
+
+        // 5. Salva todas as pessoas modificadas (novas, ativadas e desativadas).
+        if (!pessoasParaSalvar.isEmpty()) {
+            pessoaRepository.saveAll(pessoasParaSalvar);
         }
     }
+
 
     @Transactional
     protected int importarLancamentos(List<CSVRecord> records) {

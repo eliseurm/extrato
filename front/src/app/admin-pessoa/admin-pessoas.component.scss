@@ -1,0 +1,5 @@
+.container { padding: 1rem; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.actions .filter { margin-right: auto; }
+.hint { color: #666; }

@@ -16,4 +16,5 @@ public class ExtratoResponse {
     private List<LancamentoDto> lancamentos;
     private String ultimaAtualizacao; // ISO yyyy-MM-dd
     private List<Integer> anosDisponiveis; // anos distintos de dataPrevista para a pessoa
+    private Integer anoSelecionado;
 }

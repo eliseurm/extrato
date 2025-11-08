@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
 import { ExtratoIndividualComponent } from './extrato-individual/extrato-individual.component';
-import { LoginComponent } from './login.component';
-import { AdminPessoasComponent } from './admin-pessoas.component';
-import { authGuard } from './auth.guard';
+import { LoginComponent } from './login/login.component';
+import { AdminPessoasComponent } from './admin-pessoa/admin-pessoas.component';
+import { authGuard } from './login/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: LoginComponent },

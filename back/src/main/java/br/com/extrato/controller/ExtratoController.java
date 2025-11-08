@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,27 +46,40 @@ public class ExtratoController {
         }
         Pessoa pessoa = pessoaOpt.get();
 
-        List<br.com.extrato.domain.Lancamento> lancs;
-        if (year != null) {
-            java.time.LocalDate start = java.time.LocalDate.of(year, 1, 1);
-            java.time.LocalDate end = java.time.LocalDate.of(year, 12, 31);
-            lancs = lancamentoRepository.findByPessoaAndDataPrevistaBetweenOrderByDataAsc(pessoa, start, end);
-        } else {
-            lancs = lancamentoRepository.findByPessoaOrderByDataAsc(pessoa);
+        // Quando nao tem ano informado, busca o ano atual.
+        if(year == null) {
+            year = LocalDate.now().getYear();
         }
+        java.time.LocalDate start = java.time.LocalDate.of(year, 1, 1);
+        java.time.LocalDate end = java.time.LocalDate.of(year, 12, 31);
+        List<br.com.extrato.domain.Lancamento> lancs = lancamentoRepository.findByPessoaAndDataPrevistaBetweenOrderByDataAsc(pessoa, start, end);
 
-        List<LancamentoDto> dtoList = lancs.stream().map(l -> LancamentoDto.builder()
-                .nome(pessoa.getContato())
-                .dataPrevista(l.getDataPrevista())
-                .dataEfetiva(l.getDataEfetiva())
-                .descricao(l.getDescricao())
-                .valorEfetivo(l.getValorEfetivo())
-                .valorPrevisto(l.getValorPrevisto())
-                .tipo(l.getTipo())
-                .status(l.getStatus())
-                .projeto(l.getProjeto())
-                .categoria(l.getCategoria())
-                .build()).collect(Collectors.toList());
+        List<LancamentoDto> dtoList = lancs.stream().map(l -> {
+
+            StringBuilder sb = new StringBuilder();
+            if(l.getDescricao()!=null) {
+                sb.append(l.getDescricao());
+            }
+            if (l.getTags() != null) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(l.getTags());
+            }
+
+            return LancamentoDto.builder()
+                    .nome(pessoa.getContato())
+                    .dataPrevista(l.getDataPrevista())
+                    .dataEfetiva(l.getDataEfetiva())
+                    .descricao(sb.toString())
+                    .valorEfetivo(l.getValorEfetivo())
+                    .valorPrevisto(l.getValorPrevisto())
+                    .tipo(l.getTipo())
+                    .status(l.getStatus())
+                    .projeto(l.getProjeto())
+                    .categoria(l.getCategoria())
+                    .build();
+        }).collect(Collectors.toList());
 
         java.time.LocalDate maxCriacao = lancamentoRepository.findMaxDataCriacao();
         String ultimaAtualizacao = maxCriacao != null ? maxCriacao.toString() : null;
@@ -78,6 +92,7 @@ public class ExtratoController {
                 .lancamentos(dtoList)
                 .ultimaAtualizacao(ultimaAtualizacao)
                 .anosDisponiveis(anosDisponiveis)
+                .anoSelecionado(year)
                 .build();
         return ResponseEntity.ok(resp);
     }

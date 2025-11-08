@@ -25,4 +25,6 @@ public class Pessoa {
 
     @Column(name = "numero_magico", nullable = false, unique = true, length = 16)
     private String numeroMagico;
+
+    private Boolean ativo;
 }

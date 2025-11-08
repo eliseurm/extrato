@@ -1,0 +1,66 @@
+<div class="container">
+    <div class="header">
+        <div class="left">
+            <h2 *ngIf="nome" class="titulo">Extrato de {{ nome }}</h2>
+            <div class="atualizacao" *ngIf="ultimaAtualizacao">Última Atualização: {{ ultimaAtualizacao | date:'dd/MM/yyyy' }}</div>
+        </div>
+        <div class="right">
+            <label for="anoSel">Ano:</label>
+            <select id="anoSel" [(ngModel)]="selectedYear" (ngModelChange)="onYearChange($event)" [disabled]="!yearOptions.length">
+                <option *ngFor="let y of yearOptions" [value]="y">{{ y }}</option>
+            </select>
+        </div>
+    </div>
+
+    <p *ngIf="loading" class="loading">
+        <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+    </p>
+    <p *ngIf="!loading && erro" class="erro">{{ erro }}</p>
+
+    <cdk-virtual-scroll-viewport *ngIf="!loading && grouped.length" itemSize="64" class="viewport">
+        <div *cdkVirtualFor="let grupo of grouped" class="grupo">
+            <h3 class="grupo-titulo">Projeto: {{ grupo.projeto }}</h3>
+
+            <div *ngFor="let cat of grupo.categorias" class="categoria-bloco">
+                <h4 class="categoria-titulo">Categoria: {{ cat.nome || '—' }}</h4>
+                <div class="tabela-wrapper">
+                    <table class="tabela" role="table">
+                        <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Data prevista</th>
+                            <th>Data efetivada</th>
+                            <th>Status</th>
+                            <th>Descrição</th>
+                            <th class="num">Valor efetivado</th>
+                            <th class="num">Valor previsto</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr *ngFor="let l of cat.itens">
+                            <td>{{ l.tipo }}</td>
+                            <td>{{ l.dataPrevista | date:'dd/MM/yyyy' }}</td>
+                            <td>{{ l.dataEfetiva | date:'dd/MM/yyyy' }}</td>
+                            <td [ngClass]="statusClass(l.status)">{{ l.status }}</td>
+                            <td>{{ l.descricao }}</td>
+                            <td class="num">{{ (l.valorEfetivo || 0) | number:'1.2-2' }}</td>
+                            <td class="num">{{ (l.valorPrevisto || 0) | number:'1.2-2' }}</td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr class="totais">
+                            <td colspan="7">
+                                <div class="totais-wrap">
+                                    <span class="total total-confirmado">Total confirmado: {{ totalPorStatus(cat.itens, 'Confirmado') | number:'1.2-2' }}</span>
+                                    <span class="total total-pendente">Total pendente: {{ totalPorStatus(cat.itens, 'Pendente') | number:'1.2-2' }}</span>
+                                    <span class="total total-agendado">Total agendado: {{ totalPorStatus(cat.itens, 'Agendado') | number:'1.2-2' }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </cdk-virtual-scroll-viewport>
+</div>
