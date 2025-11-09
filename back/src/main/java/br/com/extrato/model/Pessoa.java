@@ -1,4 +1,4 @@
-package br.com.extrato.domain;
+package br.com.extrato.model;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +19,10 @@ public class Pessoa {
 
     @Column(nullable = false, unique = true)
     private String contato;
+
+    private String fone1;
+    private String fone2;
+    private String fone3;
 
     @Column(name = "primeiro_nome", nullable = false, length = 100)
     private String primeiroNome;

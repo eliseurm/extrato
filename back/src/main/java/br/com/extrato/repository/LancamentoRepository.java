@@ -1,7 +1,7 @@
 package br.com.extrato.repository;
 
-import br.com.extrato.domain.Lancamento;
-import br.com.extrato.domain.Pessoa;
+import br.com.extrato.model.Lancamento;
+import br.com.extrato.model.Pessoa;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

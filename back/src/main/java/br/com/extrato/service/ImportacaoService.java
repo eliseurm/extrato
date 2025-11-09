@@ -1,7 +1,7 @@
 package br.com.extrato.service;
 
-import br.com.extrato.domain.Lancamento;
-import br.com.extrato.domain.Pessoa;
+import br.com.extrato.model.Lancamento;
+import br.com.extrato.model.Pessoa;
 import br.com.extrato.repository.LancamentoRepository;
 import br.com.extrato.repository.PessoaRepository;
 import br.com.extrato.util.Base62;

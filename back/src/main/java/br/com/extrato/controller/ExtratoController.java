@@ -1,6 +1,6 @@
 package br.com.extrato.controller;
 
-import br.com.extrato.domain.Pessoa;
+import br.com.extrato.model.Pessoa;
 import br.com.extrato.dto.ExtratoResponse;
 import br.com.extrato.dto.LancamentoDto;
 import br.com.extrato.repository.LancamentoRepository;
@@ -52,7 +52,7 @@ public class ExtratoController {
         }
         java.time.LocalDate start = java.time.LocalDate.of(year, 1, 1);
         java.time.LocalDate end = java.time.LocalDate.of(year, 12, 31);
-        List<br.com.extrato.domain.Lancamento> lancs = lancamentoRepository.findByPessoaAndDataPrevistaBetweenOrderByDataAsc(pessoa, start, end);
+        List<br.com.extrato.model.Lancamento> lancs = lancamentoRepository.findByPessoaAndDataPrevistaBetweenOrderByDataAsc(pessoa, start, end);
 
         List<LancamentoDto> dtoList = lancs.stream().map(l -> {
 

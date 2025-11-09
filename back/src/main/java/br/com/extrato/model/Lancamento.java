@@ -1,4 +1,4 @@
-package br.com.extrato.domain;
+package br.com.extrato.model;
 
 import jakarta.persistence.*;
 import lombok.*;

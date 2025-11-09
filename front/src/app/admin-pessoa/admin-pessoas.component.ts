@@ -90,19 +90,20 @@ export class AdminPessoasComponent implements OnInit {
 
     exportLinks() {
         // Exporta arquivo CSV conforme especificado, usando o mesmo domínio do ambiente atual
-        const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
+        // const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
+        const origin = 'mensageiros.udi.br';
+
         const blocks: string[] = [];
         for (const p of this.pessoas) {
-            const link = `${origin}/extrato/${p.slug}`;
-            // Formato exatamente como o exemplo fornecido:
-            // <nome_completo>; <link>
-            //
-            // *Tesouraria Clube Mensageiros*
-            // Entre neste link sempre que quiser saber sobre pagamentos.
-            // Você pode guardar este link em seus favoritos e usar sempre o mesmo.;
-            const msgWhats = this.gerarTextoCodificadoWhatsApp('5534984094101', `${link} \n\n*Tesouraria Clube Mensageiros*\nEntre neste link sempre que quiser saber sobre pagamentos.\nVocê pode guardar este link em seus favoritos e usar sempre que desejar.\nObs: Esta funcionalidade esta em fase de teste, qualquer duvida sobre os pagamentos, favor entrar em contato com a tesouraria.`)
-            const mensagem = `${p.contato}; ${msgWhats}`;
-            blocks.push(mensagem);
+            if(p.fone1!=null) {
+                blocks.push(this.novaMensagem(origin, p, p.fone1));
+            }
+            if(p.fone2!=null) {
+                blocks.push(this.novaMensagem(origin, p, p.fone2));
+            }
+            if(p.fone3!=null) {
+                blocks.push(this.novaMensagem(origin, p, p.fone3));
+            }
         }
         const content = blocks.join('\n');
         const blob = new Blob([content], {type: 'text/csv;charset=utf-8'});
@@ -114,6 +115,20 @@ export class AdminPessoasComponent implements OnInit {
         URL.revokeObjectURL(a.href);
         a.remove();
         this.msg.add({severity: 'success', summary: 'Exportado', detail: `${this.pessoas.length} link(s) gerados`});
+    }
+
+    private novaMensagem(origin: string, p: PessoaMagicDto, fone: string): string {
+
+        // --- Exemplo da mensagem:
+        // <nome_completo>; <link>
+        //
+        // *Tesouraria Clube Mensageiros*
+        // Entre neste link sempre que quiser saber sobre pagamentos.
+        // Você pode guardar este link em seus favoritos e usar sempre o mesmo.;
+
+        const link = `${origin}/extrato/${p.slug}`;
+        const msgWhats = this.gerarTextoCodificadoWhatsApp(fone, `${link} \n\n*Tesouraria Clube Mensageiros*\nEntre neste link sempre que quiser saber sobre pagamentos.\nVocê pode guardar este link em seus favoritos e usar sempre que desejar.\nObs: Esta funcionalidade esta em fase de teste, qualquer duvida sobre os pagamentos, favor entrar em contato com a tesouraria.`)
+        return `${p.contato}; ${msgWhats}`;
     }
 
     logout() {

@@ -1,6 +1,6 @@
 package br.com.extrato.repository;
 
-import br.com.extrato.domain.Pessoa;
+import br.com.extrato.model.Pessoa;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

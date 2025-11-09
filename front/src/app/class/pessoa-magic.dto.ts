@@ -4,5 +4,9 @@ export interface PessoaMagicDto {
     primeiroNome: string;
     numeroMagico: string;
     slug: string;
+    fone1: string;
+    fone2: string;
+    fone3: string;
+
 
 }
