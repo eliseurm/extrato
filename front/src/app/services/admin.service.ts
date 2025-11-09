@@ -9,11 +9,6 @@ export class AdminService {
     constructor(private http: HttpClient) {
     }
 
-    // getExtrato(slug: string, year?: number): Observable<ExtratoResponse> {
-    //     const url = year ? `/api/extrato/${slug}?year=${year}` : `/api/extrato/${slug}`;
-    //     return this.http.get<ExtratoResponse>(url);
-    // }
-
     getPessoaNumeroMagico():Observable<PessoaMagicDto[]>{
         return this.http.get<PessoaMagicDto[]>('/api/admin/pessoas');
     }
@@ -22,5 +17,7 @@ export class AdminService {
         return this.http.post<ImportacaoResumoDto>('/api/admin/importacao-csv', form);
     }
 
-
+    salvarTelefones(pessoas: PessoaMagicDto[]): Observable<{atualizados: number}> {
+        return this.http.post<{atualizados: number}>('/api/admin/pessoas/telefones', pessoas);
+    }
 }

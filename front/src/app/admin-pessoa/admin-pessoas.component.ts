@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {HttpClient} from '@angular/common/http';
 import {ButtonModule} from 'primeng/button';
 import {TableModule} from 'primeng/table';
 import {ToastModule} from 'primeng/toast';
@@ -8,11 +8,12 @@ import {InputTextModule} from 'primeng/inputtext';
 import {MessageService} from 'primeng/api';
 import {PessoaMagicDto} from "../class/pessoa-magic.dto";
 import {AdminService} from "../services/admin.service";
+import {FormsModule} from '@angular/forms';
 
 @Component({
     selector: 'app-admin-pessoas',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, ToastModule, InputTextModule],
+    imports: [CommonModule, FormsModule, ButtonModule, TableModule, ToastModule, InputTextModule],
     providers: [MessageService],
     templateUrl: './admin-pessoas.component.html',
     styleUrls: ['./admin-pessoas.component.scss']
@@ -21,8 +22,11 @@ export class AdminPessoasComponent implements OnInit {
 
     pessoas: PessoaMagicDto[] = [];
     loading = false;
+    saving = false;
     file: File | null = null;
     uploading = false;
+
+    private originalMap = new Map<string, { f1: string | null, f2: string | null, f3: string | null }>();
 
     constructor(private http: HttpClient,
                 private msg: MessageService,
@@ -33,11 +37,21 @@ export class AdminPessoasComponent implements OnInit {
         this.fetch();
     }
 
+    get altered(): PessoaMagicDto[] {
+        return this.pessoas.filter(p => this.hasTelefoneChanged(p));
+    }
+
+    get alteredCount(): number { return this.altered.length; }
+
     fetch(): void {
         this.loading = true;
         this.adminService.getPessoaNumeroMagico().subscribe({
             next: (res) => {
                 this.pessoas = res;
+                this.originalMap.clear();
+                for (const p of res) {
+                    this.originalMap.set(p.contato, { f1: p.fone1 ?? null, f2: p.fone2 ?? null, f3: p.fone3 ?? null });
+                }
                 this.loading = false;
             },
             error: () => {
@@ -72,10 +86,9 @@ export class AdminPessoasComponent implements OnInit {
     }
 
     copyLink(p: PessoaMagicDto) {
-        // Usar o mesmo domínio da aplicação atual e incluir o prefixo /extrato/
-        const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
-        const url = `${origin}/extrato/${p.slug}`;
-        navigator.clipboard.writeText(url).then(() => {
+        // const url = `${origin}/extrato/${p.slug}`;
+        const msg = this.novaMensagem(p)
+        navigator.clipboard.writeText(msg).then(() => {
             this.msg.add({severity: 'success', summary: 'Copiado', detail: 'Link copiado para a área de transferência'});
         }).catch(() => {
             this.msg.add({severity: 'warn', summary: 'Atenção', detail: 'Não foi possível copiar automaticamente'});
@@ -83,26 +96,22 @@ export class AdminPessoasComponent implements OnInit {
     }
 
     openLink(p: PessoaMagicDto) {
-        // Abrir na mesma origem do app com o prefixo /extrato/
         const url = `/extrato/${p.slug}`;
         window.open(url, '_blank');
     }
 
     exportLinks() {
-        // Exporta arquivo CSV conforme especificado, usando o mesmo domínio do ambiente atual
-        // const origin = window.location.origin; // ex.: http://localhost:8080 ou https://mensageiros.udi.br
-        const origin = 'mensageiros.udi.br';
 
         const blocks: string[] = [];
         for (const p of this.pessoas) {
             if(p.fone1!=null) {
-                blocks.push(this.novaMensagem(origin, p, p.fone1));
+                blocks.push(this.novaMensagem(p, p.fone1));
             }
             if(p.fone2!=null) {
-                blocks.push(this.novaMensagem(origin, p, p.fone2));
+                blocks.push(this.novaMensagem(p, p.fone2));
             }
             if(p.fone3!=null) {
-                blocks.push(this.novaMensagem(origin, p, p.fone3));
+                blocks.push(this.novaMensagem(p, p.fone3));
             }
         }
         const content = blocks.join('\n');
@@ -117,18 +126,46 @@ export class AdminPessoasComponent implements OnInit {
         this.msg.add({severity: 'success', summary: 'Exportado', detail: `${this.pessoas.length} link(s) gerados`});
     }
 
-    private novaMensagem(origin: string, p: PessoaMagicDto, fone: string): string {
+    salvar(): void {
+        const alterados = this.altered.map(p => ({...p}));
+        if (alterados.length === 0) return;
+        this.saving = true;
+        this.adminService.salvarTelefones(alterados).subscribe({
+            next: (res) => {
+                // atualizar snapshot
+                for (const p of alterados) {
+                    this.originalMap.set(p.contato, { f1: p.fone1 ?? null, f2: p.fone2 ?? null, f3: p.fone3 ?? null });
+                }
+                this.saving = false;
+                this.msg.add({severity: 'success', summary: 'Salvo', detail: `${res.atualizados} registro(s) atualizados`});
+            },
+            error: () => {
+                this.saving = false;
+                this.msg.add({severity: 'error', summary: 'Erro', detail: 'Falha ao salvar alterações'});
+            }
+        });
+    }
 
-        // --- Exemplo da mensagem:
-        // <nome_completo>; <link>
-        //
-        // *Tesouraria Clube Mensageiros*
-        // Entre neste link sempre que quiser saber sobre pagamentos.
-        // Você pode guardar este link em seus favoritos e usar sempre o mesmo.;
+    hasTelefoneChanged(p: PessoaMagicDto): boolean {
+        const orig = this.originalMap.get(p.contato);
+        if (!orig) return false;
+        const f1 = p.fone1 ?? null; const f2 = p.fone2 ?? null; const f3 = p.fone3 ?? null;
+        return orig.f1 !== f1 || orig.f2 !== f2 || orig.f3 !== f3;
+    }
+
+    private novaMensagem(p: PessoaMagicDto, fone?: string): string {
+        // -- const origin = window.location.origin;
+        const origin = 'https://mensageiros.udi.br';
 
         const link = `${origin}/extrato/${p.slug}`;
-        const msgWhats = this.gerarTextoCodificadoWhatsApp(fone, `${link} \n\n*Tesouraria Clube Mensageiros*\nEntre neste link sempre que quiser saber sobre pagamentos.\nVocê pode guardar este link em seus favoritos e usar sempre que desejar.\nObs: Esta funcionalidade esta em fase de teste, qualquer duvida sobre os pagamentos, favor entrar em contato com a tesouraria.`)
-        return `${p.contato}; ${msgWhats}`;
+        let msgWhats = `${link} \n\n*Tesouraria Clube Mensageiros*\nEntre neste link sempre que quiser saber sobre pagamentos.\nVocê pode guardar este link em seus favoritos e usar sempre que desejar.\nObs: Esta funcionalidade esta em fase de teste, qualquer duvida sobre os pagamentos, favor entrar em contato com a tesouraria.`;
+
+        if(fone!=null) {
+            msgWhats = this.gerarTextoCodificadoWhatsApp(fone, msgWhats)
+            msgWhats = `${p.contato}; ${msgWhats}`;
+        }
+
+        return msgWhats;
     }
 
     logout() {
@@ -140,17 +177,8 @@ export class AdminPessoasComponent implements OnInit {
         if (!mensagemOriginal) {
             return '';
         }
-
-        // 1. Substitui todas as quebras de linha (\n) pelo código de URL do WhatsApp (%0A).
-        // O uso de /\n/g garante que TODAS as ocorrências sejam substituídas (flag 'g' = global).
-        // const textoComQuebraDeLinha = mensagemOriginal.replace(/\n/g, '%0A');
-
-        // 2. Codifica a string para URL.
-        // encodeURIComponent é a função padrão do JavaScript/TypeScript para codificar partes de URLs.
         const textoCodificado = encodeURIComponent(mensagemOriginal).replace(/%0A/g, '\n').replace(/\n/g, '%0A');
-
         telefone = telefone.replace(/\D/g, '');
-
         return `https://wa.me/${telefone}?text=${textoCodificado}`;
     }
 }

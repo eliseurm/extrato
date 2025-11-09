@@ -2,36 +2,54 @@
     <div class="topbar">
         <h2>Pessoas cadastradas</h2>
         <div class="actions">
-        <span class="filter">
-          <input pInputText type="text" placeholder="Filtrar por nome" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
-        </span>
+            <span class="filter">
+                <input pInputText type="text" placeholder="Filtrar" (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+            </span>
             <input type="file" (change)="onFile($event)" accept=".csv" />
             <button pButton label="Importar CSV" (click)="upload()" [disabled]="!file || uploading"></button>
-            <button pButton label="Download Links" class="p-button-success" (click)="exportLinks()"></button>
+            <button pButton label="Download Links" class="p-button-help" (click)="exportLinks()"></button>
+            <button pButton [label]="saving ? 'Salvando...' : 'Salvar ('+alteredCount+')'" class="p-button-success" [disabled]="alteredCount===0 || saving" (click)="salvar()"></button>
             <button pButton label="Sair" class="p-button-secondary" (click)="logout()"></button>
         </div>
     </div>
 
-    <p-table #dt [value]="pessoas" [tableStyle]="{ 'min-width': '50rem' }" [paginator]="true" [rows]="10" [globalFilterFields]="['contato','primeiroNome']">
+    <p-table #dt
+             [value]="pessoas"
+             responsiveLayout="scroll"
+             [paginator]="true" [rows]="10"
+             [globalFilterFields]="['contato','slug','fone1','fone2','fone3']"
+             [sortField]="'contato'" [sortOrder]="1">
+
         <ng-template pTemplate="header">
             <tr>
-                <th>Contato</th>
-                <th>Primeiro Nome</th>
-                <th>Magic</th>
+                <th class="col-action">Abrir</th>
+                <th class="col-action">Copiar</th>
+                <th pSortableColumn="contato">Contato <p-sortIcon field="contato"></p-sortIcon></th>
+                <th>Fone1</th>
+                <th>Fone2</th>
+                <th>Fone3</th>
                 <th>Slug</th>
-                <th style="width:140px">Ações</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-p>
-            <tr>
-                <td>{{ p.contato }}</td>
-                <td>{{ p.primeiroNome }}</td>
-                <td>{{ p.numeroMagico }}</td>
-                <td>{{ p.slug }}</td>
-                <td class="acoes">
-                    <button pButton size="small" label="Abrir link" (click)="openLink(p)"></button>
-                    <button pButton size="small" label="Copiar link" class="p-button-secondary" (click)="copyLink(p)"></button>
+            <tr [class.row-altered]="hasTelefoneChanged(p)">
+                <td class="col-action">
+                    <button pButton size="small" label="Abrir" (click)="openLink(p)"></button>
                 </td>
+                <td class="col-action">
+                    <button pButton size="small" label="Copiar" class="p-button-secondary" (click)="copyLink(p)"></button>
+                </td>
+                <td>{{ p.contato }}</td>
+                <td>
+                    <input pInputText [(ngModel)]="p.fone1" placeholder="Fone1" />
+                </td>
+                <td>
+                    <input pInputText [(ngModel)]="p.fone2" placeholder="Fone2" />
+                </td>
+                <td>
+                    <input pInputText [(ngModel)]="p.fone3" placeholder="Fone3" />
+                </td>
+                <td class="slug">{{ p.slug }}</td>
             </tr>
         </ng-template>
     </p-table>

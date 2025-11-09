@@ -1,5 +1,21 @@
 .container { padding: 1rem; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.actions .filter { margin-right: auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; width: 100%; }
+.actions .filter { margin-right: auto; flex: 1 1 200px; min-width: 200px; }
 .hint { color: #666; }
+
+:host ::ng-deep .p-table { font-size: 0.9rem; }
+:host ::ng-deep .p-table .p-datatable-tbody > tr > td,
+:host ::ng-deep .p-table .p-datatable-thead > tr > th { padding: .35rem .5rem; }
+
+.col-action { width: 90px; text-align: center; }
+.slug { font-family: monospace; font-size: .85rem; color: #555; }
+.row-altered { background: #fff9e6; }
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+  .topbar h2 { font-size: 1.1rem; margin: 0; }
+  .col-action { width: 80px; }
+  :host ::ng-deep .p-button { padding: .35rem .5rem; font-size: .8rem; }
+  :host ::ng-deep input.p-inputtext { width: 120px; }
+}
