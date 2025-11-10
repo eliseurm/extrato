@@ -104,13 +104,13 @@ export class AdminPessoasComponent implements OnInit {
 
         const blocks: string[] = [];
         for (const p of this.pessoas) {
-            if(p.fone1!=null) {
+            if(p.fone1!=null && !!p.fone1) {
                 blocks.push(this.novaMensagem(p, p.fone1));
             }
-            if(p.fone2!=null) {
+            if(p.fone2!=null && !!p.fone2) {
                 blocks.push(this.novaMensagem(p, p.fone2));
             }
-            if(p.fone3!=null) {
+            if(p.fone3!=null && !!p.fone3) {
                 blocks.push(this.novaMensagem(p, p.fone3));
             }
         }

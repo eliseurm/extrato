@@ -1,3 +1,6 @@
+server:
+  port: 9000
+
 spring:
   application:
     name: extrato-back
@@ -19,8 +22,6 @@ spring:
     default-schema: extrato_sh
     schemas: extrato_sh
 
-server:
-  port: 9000
 
 app:
   security:

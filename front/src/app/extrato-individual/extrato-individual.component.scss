@@ -84,9 +84,17 @@
   font-weight: 600;
 }
 
+.tabela th.num {
+  text-align: right;
+}
+
 .num {
   text-align: right;
   white-space: nowrap;
+}
+
+.tabela tbody tr:nth-child(odd) {
+  background-color: #f3f3f3;
 }
 
 .status-confirmado {

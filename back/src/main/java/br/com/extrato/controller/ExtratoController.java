@@ -56,9 +56,10 @@ public class ExtratoController {
 
         List<LancamentoDto> dtoList = lancs.stream().map(l -> {
 
+            // trata mensagem
             StringBuilder sb = new StringBuilder();
             if(l.getDescricao()!=null) {
-                sb.append(l.getDescricao());
+                sb.append(l.getDescricao().indexOf("pix")==-1 ? l.getDescricao() : "pix, ****");
             }
             if (l.getTags() != null) {
                 if (sb.length() > 0) {
